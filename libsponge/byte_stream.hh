@@ -17,6 +17,16 @@ class ByteStream {
     // that's a sign that you probably want to keep exploring
     // different approaches.
 
+    // using std::string to implement a FIFO queue
+    std::string _stream;
+    size_t _capacity;
+    size_t _free_space;
+    size_t _deq_ptr;
+    size_t _enq_ptr;
+    size_t _bytes_writen;
+    size_t _bytes_read;
+    bool   _end;
+
     bool _error{};  //!< Flag indicating that the stream suffered an error.
 
   public:
