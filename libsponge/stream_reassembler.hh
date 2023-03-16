@@ -5,15 +5,34 @@
 
 #include <cstdint>
 #include <string>
+#include <deque>
+#include <vector>
+#include <assert.h>
+#include <numeric>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
-
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+    std::deque<char> _stream;
+    std::deque<bool> _valids;
+    size_t _stream_bytes;
+    size_t _global_index;
+    bool _eof;
+
+    size_t _bytes_remain() const;
+    bool _can_push_substring(const uint64_t index, const size_t length) const;
+    size_t _bytes_can_push(const uint64_t index, const size_t length) const;
+    size_t _get_index(const size_t index) const { return index - _global_index; }
+    void _push_to_bytestream();
+    void _check_eof() {
+      if(empty() && _eof) {
+          _output.end_input();
+      }
+    };
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.
