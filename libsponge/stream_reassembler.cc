@@ -22,7 +22,7 @@ size_t StreamReassembler::_bytes_remain() const{
    return _capacity - _output.buffer_size();
 }
 bool StreamReassembler::_can_push_substring(const uint64_t index, const size_t length) const{
-    if(index < _global_index && (index + length - 1) < _global_index) {
+    if(index < _global_index && (index + length) < (_global_index + 1)) {
         return false;
     }else {
         if(index < _global_index) {
@@ -76,18 +76,20 @@ void StreamReassembler::_push_to_bytestream() {
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     size_t data_length = data.size();
     size_t push_bytes = _bytes_can_push(index, data_length);
-    _eof = eof;
+    size_t push_start = 0;
+    if(index < _global_index) {
+        push_start = _global_index - index;
+    }
+    if(!_eof) 
+        if((push_start + push_bytes) == (data_length))
+            _eof = eof;
+            
     if(push_bytes == 0) {
         _push_to_bytestream();
         _check_eof();
         return;
     }
-    string segment_data;
-    if(index < _global_index) {
-        segment_data = data.substr(_global_index - index, push_bytes);
-    }else {
-        segment_data = data.substr(0, push_bytes);
-    }
+    string segment_data = data.substr(push_start, push_bytes);
     vector<bool> valids(push_bytes, true);
     auto offset = size_t{0};
     if(index < _global_index) {

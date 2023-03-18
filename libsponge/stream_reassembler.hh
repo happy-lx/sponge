@@ -9,6 +9,7 @@
 #include <vector>
 #include <assert.h>
 #include <numeric>
+#include <iostream>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
 //! possibly overlapping) into an in-order byte stream.
