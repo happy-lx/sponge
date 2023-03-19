@@ -27,7 +27,6 @@ class StreamReassembler {
     size_t _bytes_remain() const;
     bool _can_push_substring(const uint64_t index, const size_t length) const;
     size_t _bytes_can_push(const uint64_t index, const size_t length) const;
-    size_t _get_index(const size_t index) const { return index - _global_index; }
     void _push_to_bytestream();
     void _check_eof() {
       if(empty() && _eof) {
