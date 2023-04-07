@@ -66,7 +66,6 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
             can_ack_vec.push_back(item.first);
         }
     }
-
     for(auto ack: can_ack_vec) {
         _outstanding.erase(ack);
     }

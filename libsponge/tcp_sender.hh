@@ -72,13 +72,16 @@ class TCPSender {
     uint64_t _get_max_bytes_we_can_send() const {
       auto _ackno_right_edge = _ackno + static_cast<uint32_t>((_window_size == 0 ? 1 : _window_size));
 
+      // restricted by window size
       auto bytes_max_in_window = uint64_t{0};
       if(_wrap_int_compare(_now, _ackno_right_edge) == WIntRelation::Less) {
         bytes_max_in_window = _wrap_int_abs(_now, _ackno_right_edge);
       }
 
+      // restricted by stream buffer size
       auto bytes_max_in_stream = (_syn ? 1 : 0) + _stream.buffer_size() + (_fin_valid() ? 1 : 0);
 
+      // restricted by max payload size
       auto bytes_max_in_seg = TCPConfig::MAX_PAYLOAD_SIZE + (_syn ? 1 : 0) + (_fin_valid() ? 1 : 0);
 
       return std::min(bytes_max_in_seg, std::min(bytes_max_in_stream, bytes_max_in_window));
