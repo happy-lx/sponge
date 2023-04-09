@@ -21,6 +21,48 @@ class TCPConnection {
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
     bool _linger_after_streams_finish{true};
 
+    uint64_t _time_since_last_segment_received;
+
+    bool _active;
+
+    void _send() {
+      while(_sender.segments_out().size() > 0) {
+        if(_receiver.ackno().has_value()) {
+          _sender.segments_out().front().header().ack = true;
+          _sender.segments_out().front().header().ackno = _receiver.ackno().value();
+          _sender.segments_out().front().header().win = static_cast<uint16_t>(_receiver.window_size());
+        }
+          _segments_out.push(_sender.segments_out().front());
+          _sender.segments_out().pop();
+        }
+    }
+
+    void _close(bool clean) {
+      if(!clean) {
+        _sender.stream_in().set_error();
+        _receiver.stream_out().set_error();
+        _active = false;
+      }else {
+        _active = false;
+      }
+    }
+
+    bool _check_prerequisites() const {
+      bool pre1 = _receiver.unassembled_bytes() == 0 && _receiver.stream_out().input_ended();
+      bool pre2 = _sender.stream_in().eof() && _sender.has_fin_sent();
+      bool pre3 = _sender.bytes_in_flight() == 0;
+      return pre1 && pre2 && pre3;
+    }
+
+    // called when receiving a segment
+    void _check_whether_to_linger(const TCPSegment &seg) {
+      if(seg.header().fin) {
+        if(!_sender.has_fin_sent()) {
+          _linger_after_streams_finish = false;
+        }
+      }
+    }
+
   public:
     //! \name "Input" interface for the writer
     //!@{
@@ -81,7 +123,7 @@ class TCPConnection {
     //!@}
 
     //! Construct a new connection from a configuration
-    explicit TCPConnection(const TCPConfig &cfg) : _cfg{cfg} {}
+    explicit TCPConnection(const TCPConfig &cfg) : _cfg{cfg}, _time_since_last_segment_received{0}, _active{true} {}
 
     //! \name construction and destruction
     //! moving is allowed; copying is disallowed; default construction not possible
