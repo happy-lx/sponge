@@ -27,12 +27,18 @@ class TCPConnection {
 
     void _send() {
       while(_sender.segments_out().size() > 0) {
-        if(_receiver.ackno().has_value()) {
+        if(_receiver.ackno().has_value() && active()) {
           _sender.segments_out().front().header().ack = true;
           _sender.segments_out().front().header().ackno = _receiver.ackno().value();
           _sender.segments_out().front().header().win = static_cast<uint16_t>(_receiver.window_size());
         }
           _segments_out.push(_sender.segments_out().front());
+          _sender.segments_out().pop();
+        }
+    }
+
+    void _clear_sender() {
+      while(_sender.segments_out().size() > 0) {
           _sender.segments_out().pop();
         }
     }

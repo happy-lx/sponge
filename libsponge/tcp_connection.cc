@@ -35,16 +35,24 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     // clear the timer
     _time_since_last_segment_received = 0;
 
+    _receiver.segment_received(seg);
+
     if(seg.header().rst) {
         _close(false);
         return;
     }
 
-    _receiver.segment_received(seg);
+    // if we haven't receive the syn, just ignore the segment
+    if(!_receiver.ackno().has_value()) {
+        return;
+    }
 
     if(seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
     }
+
+    // the window may open for the sender, so try to fill the window
+    _sender.fill_window();
 
     if(seg.length_in_sequence_space() > 0) {
         // occupies any seq number
@@ -91,6 +99,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     _sender.tick(ms_since_last_tick);
     if(_sender.consecutive_retransmissions() > _cfg.MAX_RETX_ATTEMPTS) {
         // this is now a hopeless connection, kill it
+        _clear_sender();
         _sender.send_empty_segment();
         _sender.segments_out().back().header().rst = true;
         _close(false);
@@ -105,6 +114,9 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
 
 void TCPConnection::end_input_stream() {
     _sender.stream_in().end_input();
+    // we might be able to send FIN now
+    _sender.fill_window();
+    _send();
 }
 
 void TCPConnection::connect() {
